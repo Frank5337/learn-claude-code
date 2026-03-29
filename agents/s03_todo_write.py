@@ -186,8 +186,16 @@ def agent_loop(messages: list):
                 if block.name == "todo":
                     used_todo = True
         rounds_since_todo = 0 if used_todo else rounds_since_todo + 1
+        # Anthropic 要求：
+        # 如果 assistant 这一轮发出了 tool_use，
+        # 那么下一条 user 消息里必须先紧跟对应的 tool_result block。
+        #
+        # 这里不能把普通 text block 插到最前面，否则 API 会认为
+        # “tool_use 后面没有立刻收到 tool_result”，从而报 400。
+        #
+        # 所以提醒文本只能追加在所有 tool_result 之后。
         if rounds_since_todo >= 3:
-            results.insert(0, {"type": "text", "text": "<reminder>Update your todos.</reminder>"})
+            results.append({"type": "text", "text": "<reminder>Update your todos.</reminder>"})
         messages.append({"role": "user", "content": results})
 
 
